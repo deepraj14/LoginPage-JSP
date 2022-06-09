@@ -1,7 +1,12 @@
 package deep;
 
+import java.io.Console;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -20,6 +25,36 @@ import jakarta.servlet.http.HttpServletResponse;
 public class LoginServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
    
+	  
+		public static String encrypt(String input)
+	    {
+	        try {
+	            
+	            MessageDigest md = MessageDigest.getInstance("SHA-512");
+	            byte[] messageDigest = md.digest(input.getBytes());
+	           
+	            
+	            BigInteger no = new BigInteger(1, messageDigest);
+	            
+	          
+	  
+	            
+	            String hashtext = no.toString(16);
+	  
+	           
+	            while (hashtext.length() < 32) {
+	                hashtext = "0" + hashtext;
+	            }
+	  
+	          
+	            return hashtext;
+	        }
+	  
+	       
+	        catch (NoSuchAlgorithmException e) {
+	            throw new RuntimeException(e);
+	        }
+	}
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		try {
 			PrintWriter out=response.getWriter();
@@ -30,7 +65,13 @@ public class LoginServlet extends HttpServlet {
 			
 			String n=request.getParameter("txtName");
 			String p=request.getParameter("txtPwd");
-			//might be a error here
+			
+			p=encrypt(p);
+			
+			
+			
+		
+			
 			PreparedStatement ps= con.prepareStatement("select uname from login where uname=? and password=?");
 			ps.setString(1,n);
 			ps.setString(2,p);
@@ -38,14 +79,18 @@ public class LoginServlet extends HttpServlet {
 			ResultSet rs=ps.executeQuery();
 			if(rs.next())
 			{
+				
+				
 				request.setAttribute("email", n);
 				RequestDispatcher rd=request.getRequestDispatcher("welcome.jsp");
 				rd.forward(request, response);
 			}
 			else
 			{
-				out.println("<font color=red size=18> Login Failed!!<br>");
-				out.println("<a href=login.jsp> TRY AGAIN!!</a>");
+				request.setAttribute("error", true);
+				RequestDispatcher rd=request.getRequestDispatcher("login.jsp");
+				rd.include(request, response);
+				
 				
 			}
 			
@@ -53,7 +98,6 @@ public class LoginServlet extends HttpServlet {
 			
 			e.printStackTrace();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
